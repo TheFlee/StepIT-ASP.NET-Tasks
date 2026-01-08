@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/01. Intro/">
+    <Project Path="01. MVC Example/01. MVC Example.csproj" Id="c01408b4-a4d0-4b08-a61d-c59ff73c990d" />
+    <Project Path="01. Web API example/01. Web API example.csproj" Id="e9cf657e-fc0f-487b-8b17-37ac5e2a20c9" />
+    <Project Path="01. Web App Example/01. Web App Example.csproj" Id="6eb1c98d-88c7-4d80-92df-c955e4df4152" />
+  </Folder>
+</Solution>
