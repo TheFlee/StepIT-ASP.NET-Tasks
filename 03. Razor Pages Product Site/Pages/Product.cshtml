@@ -1,0 +1,22 @@
+﻿@page
+@model _03._Razor_Pages_Product_Site.Pages.ProductModel
+
+@if (Model.Product is not null){
+    <div class="product-container product-card-body mx-auto">
+        <div>
+            <h4 class="product-title">@Model.Product.Name</h4>
+            <p class="product-desc text-muted">@Model.Product.Description</p>
+        </div>
+        <div class="bottom">
+            <span class="product-price">$@Math.Round(Model.Product.Price, 2)</span>
+            @if (Model.Product.IsAvailable)
+            {
+                <p>In Stock: @Model.Product.Count</p>
+            }
+            else
+            {
+                <p>Out of Stock</p>
+            }
+        </div>
+    </div>
+}

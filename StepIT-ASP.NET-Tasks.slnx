@@ -4,4 +4,10 @@
     <Project Path="01. Web API example/01. Web API example.csproj" Id="e9cf657e-fc0f-487b-8b17-37ac5e2a20c9" />
     <Project Path="01. Web App Example/01. Web App Example.csproj" Id="6eb1c98d-88c7-4d80-92df-c955e4df4152" />
   </Folder>
+  <Folder Name="/02. Dependency Injection, Services, Razor Page/">
+    <Project Path="02. Mini ASP/02. Mini ASP.csproj" Id="50744b53-ebe1-419e-a052-691e98a81be6" />
+  </Folder>
+  <Folder Name="/03. Razor Pages/">
+    <Project Path="03. Razor Pages Product Site/03. Razor Pages Product Site.csproj" Id="1c096853-8cd9-4893-86ab-7000ec988be5" />
+  </Folder>
 </Solution>

@@ -1,0 +1,28 @@
+﻿@page
+@model _03._Razor_Pages_Product_Site.Pages.ProductsModel
+@if (Model.Products.Any())
+{
+    <div class="product-grid">
+        @foreach (var product in Model.Products)
+        {
+            <a href="/product?id=@product.Id" class="product-card">
+                <div class="product-card-body">
+                    <div>
+                        <h4 class="product-title">@product.Name</h4>
+                        <p class="product-desc text-muted">@product.Description</p>
+                    </div>
+                    <div class="bottom">
+                        <span class="product-price">$@Math.Round(product.Price, 2)</span>
+                    </div>
+                </div>
+            </a>
+        }
+    </div>
+}
+else
+{
+    <div>
+        <p>No Data</p>
+    </div>
+}
+
