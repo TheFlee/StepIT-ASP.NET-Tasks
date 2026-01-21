@@ -1,0 +1,25 @@
+﻿<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <h4 class="mb-3 fw-bold">Skills</h4>
+            <ul class="list-group shadow-sm">
+                @foreach (var skill in Model)
+                {
+                    var rand = new Random();
+                    int percent = rand.Next(60, 81);
+                                                    <li class="list-group-item">
+                                                        <div class="d-flex justify-content-between">
+                                                            <span>@skill</span>
+                                                            <span>@percent%</span>
+                                                        </div>
+                                                        <div class="progress mt-1" style="height: 8px;">
+                                                            <div class="progress-bar bg-success" role="progressbar" style="width: @percent%" aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100"></div>
+                                                        </div>
+                                                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
