@@ -16,4 +16,7 @@
   <Folder Name="/05. MVC CV/">
     <Project Path="05. MVC CV/05. MVC CV.csproj" Id="5f6ba1f0-3cdd-43b0-ac5f-d009547f5605" />
   </Folder>
+  <Folder Name="/06.Web API/">
+    <Project Path="06. Web API/06. Web API.csproj" Id="53801ae8-975d-47fb-a48f-630cd68b9705" />
+  </Folder>
 </Solution>
