@@ -16,6 +16,11 @@ public class TaskItemService : ITaskItemService
 
     public async Task<TaskItem> CreateAsync(TaskItem task)
     {
+        var project = await _context.Projects.FindAsync(task.ProjectId);
+        if (project is null)
+        {
+            throw new ArgumentException($"Project with ID {task.ProjectId} does not exist.");
+        }
         task.CreatedAt = DateTimeOffset.UtcNow;
         task.UpdatedAt = null;
         _context.TaskItems.Add(task);
@@ -47,10 +52,11 @@ public class TaskItemService : ITaskItemService
                                        .FirstOrDefaultAsync(t => t.Id == id);
     }
 
-    public async Task<TaskItem?> GetByProjectIdAsync(int projectId)
+    public async Task<IEnumerable<TaskItem>> GetByProjectIdAsync(int projectId)
     {
-        return await _context.TaskItems.Include(t => t.Project)
-                                       .FirstOrDefaultAsync(t => t.ProjectId == projectId);
+        return await _context.TaskItems.Where(t => t.ProjectId == projectId)
+                                       .Include(t => t.Project)
+                                       .ToListAsync();
     }
 
     public async Task<TaskItem?> UpdateAsync(int id, TaskItem taskItem)
