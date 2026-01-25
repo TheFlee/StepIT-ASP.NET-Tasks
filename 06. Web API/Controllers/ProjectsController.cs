@@ -1,4 +1,5 @@
-﻿using _06._Web_API.Models;
+﻿using _06._Web_API.DTOs.ProjectDTOs;
+using _06._Web_API.Models;
 using _06._Web_API.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,13 +18,13 @@ public class ProjectsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Project>>> GetAll()
+    public async Task<ActionResult<IEnumerable<ProjectResponseDTO>>> GetAll()
     {
         var projects = await _projectService.GetAllAsync();
         return Ok(projects);
     }
     [HttpGet("{id}")]
-    public async Task<ActionResult<Project>> GetById(int id)
+    public async Task<ActionResult<ProjectResponseDTO>> GetById(int id)
     {
         var project = await _projectService.GetByIdAsync(id);
 
@@ -35,7 +36,7 @@ public class ProjectsController : ControllerBase
         return Ok(project);
     }
     [HttpPost]
-    public async Task<ActionResult<Project>> Create([FromBody] Project project)
+    public async Task<ActionResult<ProjectResponseDTO>> Create([FromBody] CreateProjectRequest project)
     {
         if(!ModelState.IsValid)
         {
@@ -47,7 +48,7 @@ public class ProjectsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<Project>> Update(int id, [FromBody] Project project)
+    public async Task<ActionResult<ProjectResponseDTO>> Update(int id, [FromBody] UpdateProjectRequest project)
     {
         if(!ModelState.IsValid)
         {

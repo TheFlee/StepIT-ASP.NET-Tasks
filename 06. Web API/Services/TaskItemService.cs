@@ -1,4 +1,5 @@
 ﻿using _06._Web_API.Data;
+using _06._Web_API.DTOs.TaskItemDTOs;
 using _06._Web_API.Models;
 using _06._Web_API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -13,21 +14,29 @@ public class TaskItemService : ITaskItemService
     {
         _context = context;
     }
-
-    public async Task<TaskItem> CreateAsync(TaskItem task)
+    public async Task<TaskItemResponseDTO> CreateAsync(CreateTaskItemRequest task)
     {
-        var project = await _context.Projects.FindAsync(task.ProjectId);
-        if (project is null)
+        var isProjectExists = await _context.Projects.AnyAsync(p => p.Id == task.ProjectId);
+        if (!isProjectExists)
         {
             throw new ArgumentException($"Project with ID {task.ProjectId} does not exist.");
         }
-        task.CreatedAt = DateTimeOffset.UtcNow;
-        task.UpdatedAt = null;
-        _context.TaskItems.Add(task);
+
+        var taskItem = new TaskItem
+        {
+            Title = task.Title,
+            Description = task.Description,
+            Status = Models.TaskStatus.ToDo,
+            ProjectId = task.ProjectId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = null!
+        };
+        _context.TaskItems.Add(taskItem);
         await _context.SaveChangesAsync();
 
-        await _context.Entry(task).Reference(t => t.Project).LoadAsync();
-        return task;
+        await _context.Entry(taskItem).Reference(t => t.Project).LoadAsync();
+
+        return MapToResponseDTO(taskItem);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -40,26 +49,29 @@ public class TaskItemService : ITaskItemService
         return true;
     }
 
-    public async Task<IEnumerable<TaskItem>> GetAllAsync()
+    public async Task<IEnumerable<TaskItemResponseDTO>> GetAllAsync()
     {
-        return await _context.TaskItems.Include(t => t.Project).ToListAsync();
+        var taskItems = await _context.TaskItems.Include(t => t.Project).ToListAsync();
+        return taskItems.Select(MapToResponseDTO);
 
     }
 
-    public async Task<TaskItem?> GetByIdAsync(int id)
+    public async Task<TaskItemResponseDTO?> GetByIdAsync(int id)
     {
-        return await _context.TaskItems.Include(t => t.Project)
-                                       .FirstOrDefaultAsync(t => t.Id == id);
+        var taskItem = await _context.TaskItems.Include(t => t.Project)
+                                               .FirstOrDefaultAsync(t => t.Id == id);
+        return MapToResponseDTO(taskItem!);
     }
 
-    public async Task<IEnumerable<TaskItem>> GetByProjectIdAsync(int projectId)
+    public async Task<IEnumerable<TaskItemResponseDTO>> GetByProjectIdAsync(int projectId)
     {
-        return await _context.TaskItems.Where(t => t.ProjectId == projectId)
+        var taskItems = await _context.TaskItems.Where(t => t.ProjectId == projectId)
                                        .Include(t => t.Project)
                                        .ToListAsync();
+        return taskItems.Select(MapToResponseDTO);
     }
 
-    public async Task<TaskItem?> UpdateAsync(int id, TaskItem taskItem)
+    public async Task<TaskItemResponseDTO?> UpdateAsync(int id, UpdateTaskItemRequest taskItem)
     {
         var updatedTaskItem = await _context.TaskItems.Include(t => t.Project)
                                                       .FirstOrDefaultAsync(t => t.Id == id);
@@ -70,7 +82,20 @@ public class TaskItemService : ITaskItemService
         updatedTaskItem.Status = taskItem.Status;
         updatedTaskItem.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
-        return updatedTaskItem;
+        return MapToResponseDTO(updatedTaskItem);
 
+    }
+
+    private TaskItemResponseDTO MapToResponseDTO(TaskItem taskItem)
+    {
+        return new TaskItemResponseDTO
+        {
+            Id = taskItem.Id,
+            Title = taskItem.Title,
+            Description = taskItem.Description,
+            Status = taskItem.Status.ToString(),
+            ProjectId = taskItem.ProjectId,
+            ProjectName = taskItem.Project!.Name
+        };
     }
 }

@@ -1,4 +1,5 @@
 ﻿using _06._Web_API.Data;
+using _06._Web_API.DTOs.ProjectDTOs;
 using _06._Web_API.Models;
 using _06._Web_API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -14,15 +15,21 @@ public class ProjectService : IProjectService
         _context = context;
     }
 
-    public async Task<Project> CreateAsync(Project project)
+    public async Task<ProjectResponseDTO> CreateAsync(CreateProjectRequest project)
     {
-        project.CreatedAt = DateTimeOffset.UtcNow;
-        project.UpdatedAt = null!;
-        _context.Projects.Add(project);
+        var newProject = new Project
+        {
+            Name = project.Name,
+            Description = project.Description,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = null!
+        };
+        
+        _context.Projects.Add(newProject);
         await _context.SaveChangesAsync();
         
-        await _context.Entry(project).Collection(p => p.Tasks).LoadAsync();
-        return project;
+        await _context.Entry(newProject).Collection(p => p.Tasks).LoadAsync();
+        return MapToResponseDTO(newProject);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -35,27 +42,40 @@ public class ProjectService : IProjectService
         return true;
     }
 
-    public async Task<IEnumerable<Project>> GetAllAsync()
+    public async Task<IEnumerable<ProjectResponseDTO>> GetAllAsync()
     {
-        return await _context.Projects.Include(p => p.Tasks).ToListAsync();
+        var projects = await _context.Projects.Include(p => p.Tasks).ToListAsync();
+        return projects.Select(MapToResponseDTO);
     }
 
-    public async Task<Project?> GetByIdAsync(int id)
+    public async Task<ProjectResponseDTO?> GetByIdAsync(int id)
     {
-        return await _context.Projects.Include(p => p.Tasks).FirstOrDefaultAsync(p => p.Id == id);
+        var project = await _context.Projects.Include(p => p.Tasks).FirstOrDefaultAsync(p => p.Id == id);
+        return MapToResponseDTO(project!);
     }
 
-    public async Task<Project?> UpdateAsync(int id, Project project)
+    public async Task<ProjectResponseDTO?> UpdateAsync(int id, UpdateProjectRequest project)
     {
         var updatedProject = await _context.Projects.Include(p => p.Tasks)
                                                     .FirstOrDefaultAsync(p => p.Id == id);
 
-        if (project is null) return null;
+        if (updatedProject is null) return null;
 
         updatedProject!.Name = project.Name;
         updatedProject.Description = project.Description;
         updatedProject.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
-        return project;
+        return MapToResponseDTO(updatedProject);
     }
-}
+
+    private ProjectResponseDTO MapToResponseDTO(Project project)
+    {
+        return new ProjectResponseDTO
+        {
+            Id = project.Id,
+            Name = project.Name,
+            Description = project.Description,
+            TaskCount = project.Tasks.Count()
+        };
+    }
+}   

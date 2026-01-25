@@ -14,7 +14,7 @@ public class TaskItem
     // foreign key
     public int ProjectId { get; set; }
 
-    [JsonIgnore]
+    //[JsonIgnore]
     public Project? Project { get; set; } = null!;
 }
 

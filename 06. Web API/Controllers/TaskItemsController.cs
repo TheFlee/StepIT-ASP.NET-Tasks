@@ -1,4 +1,6 @@
-﻿using _06._Web_API.Models;
+﻿using _06._Web_API.DTOs.ProjectDTOs;
+using _06._Web_API.DTOs.TaskItemDTOs;
+using _06._Web_API.Models;
 using _06._Web_API.Services;
 using _06._Web_API.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -16,13 +18,13 @@ public class TaskItemsController : ControllerBase
         _taskItemService = taskItemService;
     }
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TaskItem>>> GetAll()
+    public async Task<ActionResult<IEnumerable<TaskItemResponseDTO>>> GetAll()
     {
         var tasks = await _taskItemService.GetAllAsync();
         return Ok(tasks);
     }
     [HttpGet("{id}")]
-    public async Task<ActionResult<TaskItem>> GetById(int id)
+    public async Task<ActionResult<TaskItemResponseDTO>> GetById(int id)
     {
         var task = await _taskItemService.GetByIdAsync(id);
         if (task == null)
@@ -33,7 +35,7 @@ public class TaskItemsController : ControllerBase
     }
 
     [HttpGet("project/{projectId}")]
-    public async Task<ActionResult<TaskItem>> GetByProjectId(int projectId)
+    public async Task<ActionResult<TaskItemResponseDTO>> GetByProjectId(int projectId)
     {
         var task = await _taskItemService.GetByProjectIdAsync(projectId);
         if (task == null)
@@ -43,7 +45,7 @@ public class TaskItemsController : ControllerBase
         return Ok(task);
     }
     [HttpPost]
-    public async Task<ActionResult<TaskItem>> Create([FromBody] TaskItem taskItem)
+    public async Task<ActionResult<TaskItemResponseDTO>> Create([FromBody] CreateTaskItemRequest taskItem)
     {
         if (!ModelState.IsValid)
         {
@@ -61,7 +63,7 @@ public class TaskItemsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<TaskItem>> Update(int id, [FromBody] TaskItem taskItem)
+    public async Task<ActionResult<TaskItemResponseDTO>> Update(int id, [FromBody] UpdateTaskItemRequest taskItem)
     {
         if (!ModelState.IsValid)
         {
