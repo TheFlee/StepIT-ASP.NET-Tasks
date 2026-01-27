@@ -1,4 +1,5 @@
 using _06._Web_API.Data;
+using _06._Web_API.Mappings;
 using _06._Web_API.Services;
 using _06._Web_API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ builder.Services.AddDbContext<TaskFlowDbContext>(
 
 builder.Services.AddScoped<ITaskItemService, TaskItemService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 var app = builder.Build();
 

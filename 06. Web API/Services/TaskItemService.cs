@@ -2,6 +2,7 @@
 using _06._Web_API.DTOs.TaskItemDTOs;
 using _06._Web_API.Models;
 using _06._Web_API.Services.Interfaces;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
 namespace _06._Web_API.Services;
@@ -9,10 +10,12 @@ namespace _06._Web_API.Services;
 public class TaskItemService : ITaskItemService
 {
     private readonly TaskFlowDbContext _context;
+    private readonly IMapper _mapper;
 
-    public TaskItemService(TaskFlowDbContext context)
+    public TaskItemService(TaskFlowDbContext context, IMapper mapper)
     {
         _context = context;
+        _mapper = mapper;
     }
     public async Task<TaskItemResponseDTO> CreateAsync(CreateTaskItemRequest task)
     {
@@ -22,15 +25,8 @@ public class TaskItemService : ITaskItemService
             throw new ArgumentException($"Project with ID {task.ProjectId} does not exist.");
         }
 
-        var taskItem = new TaskItem
-        {
-            Title = task.Title,
-            Description = task.Description,
-            Status = Models.TaskStatus.ToDo,
-            ProjectId = task.ProjectId,
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = null!
-        };
+        var taskItem = _mapper.Map<TaskItem>(task);
+
         _context.TaskItems.Add(taskItem);
         await _context.SaveChangesAsync();
 
@@ -52,7 +48,8 @@ public class TaskItemService : ITaskItemService
     public async Task<IEnumerable<TaskItemResponseDTO>> GetAllAsync()
     {
         var taskItems = await _context.TaskItems.Include(t => t.Project).ToListAsync();
-        return taskItems.Select(MapToResponseDTO);
+
+        return _mapper.Map<IEnumerable<TaskItemResponseDTO>>(taskItems);
 
     }
 
@@ -60,7 +57,8 @@ public class TaskItemService : ITaskItemService
     {
         var taskItem = await _context.TaskItems.Include(t => t.Project)
                                                .FirstOrDefaultAsync(t => t.Id == id);
-        return MapToResponseDTO(taskItem!);
+        if (taskItem is null) return null;
+        return _mapper.Map<TaskItemResponseDTO>(taskItem);
     }
 
     public async Task<IEnumerable<TaskItemResponseDTO>> GetByProjectIdAsync(int projectId)
@@ -68,34 +66,21 @@ public class TaskItemService : ITaskItemService
         var taskItems = await _context.TaskItems.Where(t => t.ProjectId == projectId)
                                        .Include(t => t.Project)
                                        .ToListAsync();
-        return taskItems.Select(MapToResponseDTO);
+        return _mapper.Map<IEnumerable<TaskItemResponseDTO>>(taskItems);
+
     }
 
     public async Task<TaskItemResponseDTO?> UpdateAsync(int id, UpdateTaskItemRequest taskItem)
     {
         var updatedTaskItem = await _context.TaskItems.Include(t => t.Project)
                                                       .FirstOrDefaultAsync(t => t.Id == id);
-        if (taskItem is null) return null;
+        if (updatedTaskItem is null) return null;
 
-        updatedTaskItem!.Title = taskItem.Title;
-        updatedTaskItem.Description = taskItem.Description;
-        updatedTaskItem.Status = taskItem.Status;
-        updatedTaskItem.UpdatedAt = DateTimeOffset.UtcNow;
+        _mapper.Map(taskItem, updatedTaskItem);
+
         await _context.SaveChangesAsync();
-        return MapToResponseDTO(updatedTaskItem);
 
-    }
+        return _mapper.Map<TaskItemResponseDTO>(updatedTaskItem);
 
-    private TaskItemResponseDTO MapToResponseDTO(TaskItem taskItem)
-    {
-        return new TaskItemResponseDTO
-        {
-            Id = taskItem.Id,
-            Title = taskItem.Title,
-            Description = taskItem.Description,
-            Status = taskItem.Status.ToString(),
-            ProjectId = taskItem.ProjectId,
-            ProjectName = taskItem.Project!.Name
-        };
     }
 }
