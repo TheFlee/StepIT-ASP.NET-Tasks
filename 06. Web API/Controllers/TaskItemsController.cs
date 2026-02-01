@@ -1,9 +1,6 @@
-﻿using _06._Web_API.DTOs.ProjectDTOs;
+﻿using _06._Web_API.Common;
 using _06._Web_API.DTOs.TaskItemDTOs;
-using _06._Web_API.Models;
-using _06._Web_API.Services;
 using _06._Web_API.Services.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace _06._Web_API.Controllers;
@@ -17,10 +14,16 @@ public class TaskItemsController : ControllerBase
     {
         _taskItemService = taskItemService;
     }
-    [HttpGet]
+    [HttpGet("all")]
     public async Task<ActionResult<IEnumerable<TaskItemResponseDTO>>> GetAll()
     {
         var tasks = await _taskItemService.GetAllAsync();
+        return Ok(tasks);
+    }
+    [HttpGet]
+    public async Task<ActionResult<PagedResult<TaskItemResponseDTO>>> GetPaged([FromQuery]TaskItemQueryParams queryParams)
+    {
+        var tasks = await _taskItemService.GetPagedAsync(queryParams);
         return Ok(tasks);
     }
     [HttpGet("{id}")]
@@ -51,15 +54,9 @@ public class TaskItemsController : ControllerBase
         {
             return BadRequest(ModelState);
         }
-        try
-        {
-            var task = await _taskItemService.CreateAsync(taskItem);
-            return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+
+        var task = await _taskItemService.CreateAsync(taskItem);
+        return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
     }
 
     [HttpPut("{id}")]

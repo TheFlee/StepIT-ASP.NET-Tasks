@@ -1,7 +1,6 @@
-﻿using _06._Web_API.DTOs.ProjectDTOs;
-using _06._Web_API.Models;
+﻿using _06._Web_API.Common;
+using _06._Web_API.DTOs.ProjectDTOs;
 using _06._Web_API.Services.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace _06._Web_API.Controllers;
@@ -17,11 +16,15 @@ public class ProjectsController : ControllerBase
         _projectService = projectService;
     }
 
+    /// <summary>
+    /// Retrieves all projects.
+    /// </summary>
+    /// <returns>List of projects in the system</returns>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ProjectResponseDTO>>> GetAll()
+    public async Task<ActionResult<ApiResponse<IEnumerable<ProjectResponseDTO>>>> GetAll()
     {
         var projects = await _projectService.GetAllAsync();
-        return Ok(projects);
+        return Ok(ApiResponse<IEnumerable<ProjectResponseDTO>>.SuccessResponse(projects, "Projects returned successfully"));
     }
     [HttpGet("{id}")]
     public async Task<ActionResult<ProjectResponseDTO>> GetById(int id)

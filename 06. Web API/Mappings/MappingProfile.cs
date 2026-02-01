@@ -26,6 +26,7 @@ public class MappingProfile : Profile
 
         CreateMap<TaskItem, TaskItemResponseDTO>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.Priority, opt => opt.MapFrom(src => src.Priority.ToString()))
             .ForMember(dest => dest.ProjectName, opt => opt.MapFrom(src => src.Project!.Name));
 
         CreateMap<CreateTaskItemRequest, TaskItem>()

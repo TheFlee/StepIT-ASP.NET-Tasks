@@ -1,4 +1,5 @@
-﻿using _06._Web_API.Data;
+﻿using _06._Web_API.Common;
+using _06._Web_API.Data;
 using _06._Web_API.DTOs.TaskItemDTOs;
 using _06._Web_API.Models;
 using _06._Web_API.Services.Interfaces;
@@ -32,7 +33,7 @@ public class TaskItemService : ITaskItemService
 
         await _context.Entry(taskItem).Reference(t => t.Project).LoadAsync();
 
-        return MapToResponseDTO(taskItem);
+        return _mapper.Map<TaskItemResponseDTO>(taskItem);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -82,5 +83,52 @@ public class TaskItemService : ITaskItemService
 
         return _mapper.Map<TaskItemResponseDTO>(updatedTaskItem);
 
+    }
+
+    public async Task<PagedResult<TaskItemResponseDTO>> GetPagedAsync(TaskItemQueryParams queryParams)
+    {
+        queryParams.Validate();
+        var query = _context.TaskItems.Include(t => t.Project).AsQueryable();
+
+        // filter by ProjectId
+        if(queryParams.ProjectId.HasValue)
+        {
+            query = query.Where(t => t.ProjectId == queryParams.ProjectId.Value);
+        }
+
+        // filter by Status
+        if (!string.IsNullOrEmpty(queryParams.Status))
+        {
+            if(Enum.TryParse<Models.TaskStatus>(queryParams.Status, true, out var status))
+            {
+                query = query.Where(t => t.Status == status);
+            }
+        }
+
+        // filter by Priority
+        if (!string.IsNullOrEmpty(queryParams.Priority))
+        {
+            if(Enum.TryParse<Models.TaskPriority>(queryParams.Priority, true, out var priority))
+            {
+                query = query.Where(t => t.Priority == priority);
+            }
+        }
+
+        // filter by Title and Description
+        if (!string.IsNullOrEmpty(queryParams.Search))
+        {
+            var searchTerm = queryParams.Search.ToLower();
+            query = query.Where(t => t.Title.ToLower().Contains(searchTerm) || 
+                                     t.Description.ToLower().Contains(searchTerm));
+        }
+
+        // Pagination
+        var totalCount = await query.CountAsync();
+        var skip = (queryParams.Page - 1) * queryParams.PageSize;
+        var tasks = await query.Skip(skip)
+                               .Take(queryParams.PageSize)
+                               .ToListAsync();
+        var taskDTOs = _mapper.Map<IEnumerable<TaskItemResponseDTO>>(tasks);
+        return PagedResult<TaskItemResponseDTO>.Create(taskDTOs, queryParams.Page, queryParams.PageSize, totalCount);
     }
 }

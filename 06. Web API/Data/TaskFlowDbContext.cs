@@ -31,6 +31,7 @@ public class TaskFlowDbContext : DbContext
             task.Property(t => t.Title).IsRequired().HasMaxLength(200);
             task.Property(t => t.Description).IsRequired().HasMaxLength(1000);
             task.Property(t => t.Status).IsRequired();
+            task.Property(t => t.Priority).IsRequired();
             task.Property(t => t.CreatedAt).IsRequired();
 
             // Relationship
