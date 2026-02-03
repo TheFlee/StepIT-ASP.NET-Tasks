@@ -1,9 +1,10 @@
 ﻿using _06._Web_API.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace _06._Web_API.Data;
 
-public class TaskFlowDbContext : DbContext
+public class TaskFlowDbContext : IdentityDbContext<ApplicationUser>
 {
     public TaskFlowDbContext(DbContextOptions<TaskFlowDbContext> options) : base(options)
     {

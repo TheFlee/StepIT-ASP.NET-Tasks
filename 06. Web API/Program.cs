@@ -3,11 +3,13 @@ using _06._Web_API.DTOs.ProjectDTOs;
 using _06._Web_API.DTOs.TaskItemDTOs;
 using _06._Web_API.Mappings;
 using _06._Web_API.Middleware;
+using _06._Web_API.Models;
 using _06._Web_API.Services;
 using _06._Web_API.Services.Interfaces;
 using _06._Web_API.Validators;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
@@ -54,8 +56,12 @@ builder.Services.AddDbContext<TaskFlowDbContext>(
     options => options.UseSqlServer(connectionString)
     );
 
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<TaskFlowDbContext>();
+
 builder.Services.AddScoped<ITaskItemService, TaskItemService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 #region Fluent Validation DI
 //builder.Services.AddScoped<IValidator<CreateProjectRequest>, CreateProjectValidator>();

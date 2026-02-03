@@ -32,27 +32,27 @@ public class GlobalExceptionMiddleware
 
         context.Response.ContentType = "application/problem+json";
 
-        ProblemDetails problem;
-        int statusCode;
-        switch (ex)
+        var (statusCode, problem) = ex switch
         {
-            case ValidationException validationException:
-                statusCode = (int)HttpStatusCode.BadRequest;
-                problem = CreateValidationProblemDetails(context, validationException, statusCode);
-                break;
-            case KeyNotFoundException:
-                statusCode = (int)HttpStatusCode.NotFound;
-                problem = CreateProblemDetails(context, statusCode, "Resource not found.", ex.Message);
-                break;
-            case ArgumentException:
-                statusCode = (int)HttpStatusCode.BadRequest;
-                problem = CreateProblemDetails(context, statusCode, "Invalid Request.", ex.Message);
-                break;
-            default:
-                statusCode = (int)HttpStatusCode.InternalServerError;
-                problem = CreateProblemDetails(context, statusCode, "An unexpected error occured", ex.Message);
-                break;
-        }
+            ValidationException validationException => 
+            ((int)HttpStatusCode.BadRequest, CreateValidationProblemDetails(context, validationException, (int)HttpStatusCode.BadRequest)),
+           
+            KeyNotFoundException => 
+            ((int)HttpStatusCode.NotFound, CreateProblemDetails(context, (int)HttpStatusCode.NotFound, "Resource not found.", ex.Message)),
+            
+            ArgumentException => 
+            ((int)HttpStatusCode.BadRequest, CreateProblemDetails(context, (int)HttpStatusCode.BadRequest, "Invalid Request.", ex.Message)),
+            
+            InvalidOperationException => 
+            ((int)HttpStatusCode.BadRequest, CreateProblemDetails(context, (int)HttpStatusCode.BadRequest, "Invalid Request.", ex.Message)),
+            
+            UnauthorizedAccessException => 
+            ((int)HttpStatusCode.Unauthorized, CreateProblemDetails(context, (int)HttpStatusCode.Unauthorized, "User unauthorized.", ex.Message)),
+            
+            _ => 
+            ((int)HttpStatusCode.InternalServerError, CreateProblemDetails(context, (int)HttpStatusCode.InternalServerError, "An unexpected error occured", ex.Message))
+        };
+
 
         context.Response.StatusCode = statusCode;
         var json = JsonSerializer.Serialize(problem);
