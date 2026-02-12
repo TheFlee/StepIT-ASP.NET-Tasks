@@ -1,5 +1,4 @@
-﻿using _06._Web_API.Validators;
-using FluentValidation;
+﻿using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using System.Text.Json;
@@ -10,11 +9,13 @@ public class GlobalExceptionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionMiddleware> _logger;
+
     public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
     {
         _next = next;
         _logger = logger;
     }
+
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -26,43 +27,44 @@ public class GlobalExceptionMiddleware
             await HandleExceptionAsync(context, ex);
         }
     }
+
     private async Task HandleExceptionAsync(HttpContext context, Exception ex)
     {
-        _logger.LogError(ex, "An unhandled exception occurred while processing request.");
+        _logger.LogError(ex, "Unhandled exception occured while processing request");
 
         context.Response.ContentType = "application/problem+json";
 
         var (statusCode, problem) = ex switch
         {
-            ValidationException validationException => 
-            ((int)HttpStatusCode.BadRequest, CreateValidationProblemDetails(context, validationException, (int)HttpStatusCode.BadRequest)),
-           
-            KeyNotFoundException => 
-            ((int)HttpStatusCode.NotFound, CreateProblemDetails(context, (int)HttpStatusCode.NotFound, "Resource not found.", ex.Message)),
-            
-            ArgumentException => 
-            ((int)HttpStatusCode.BadRequest, CreateProblemDetails(context, (int)HttpStatusCode.BadRequest, "Invalid Request.", ex.Message)),
-            
-            InvalidOperationException => 
-            ((int)HttpStatusCode.BadRequest, CreateProblemDetails(context, (int)HttpStatusCode.BadRequest, "Invalid Request.", ex.Message)),
-            
-            UnauthorizedAccessException => 
-            ((int)HttpStatusCode.Unauthorized, CreateProblemDetails(context, (int)HttpStatusCode.Unauthorized, "User unauthorized.", ex.Message)),
-            
-            _ => 
-            ((int)HttpStatusCode.InternalServerError, CreateProblemDetails(context, (int)HttpStatusCode.InternalServerError, "An unexpected error occured", ex.Message))
+            ValidationException validationException =>
+            (400, CreateValidationProblemDetails(context, validationException, 400)),
+
+            KeyNotFoundException =>
+            (404, CreateProblemDetails(context, 404, "Resource not found", ex.Message)),
+
+            ArgumentException =>
+             (400, CreateProblemDetails(context, 400, "Invalid request", ex.Message)),
+
+            InvalidOperationException =>
+            (400, CreateProblemDetails(context, 400, "Invalid request", ex.Message)),
+
+            UnauthorizedAccessException =>
+            (401, CreateProblemDetails(context, 401, "User unauthorized", ex.Message)),
+
+            _ => (500, CreateProblemDetails(context, 500, "An unxpected error occured", "An unxpected error occured while processing request"))
         };
 
-
         context.Response.StatusCode = statusCode;
+
         var json = JsonSerializer.Serialize(problem);
+
         await context.Response.WriteAsync(json);
     }
 
     private ProblemDetails CreateProblemDetails(
-        HttpContext context, 
-        int statusCode, 
-        string title, 
+        HttpContext context,
+        int statusCode,
+        string title,
         string detail)
     {
         return new ProblemDetails
@@ -75,24 +77,20 @@ public class GlobalExceptionMiddleware
         };
     }
 
-    private ProblemDetails CreateValidationProblemDetails(
-        HttpContext context, 
-        ValidationException validationException, 
-        int statusCode)
+    private ProblemDetails CreateValidationProblemDetails(HttpContext context, ValidationException validationException, int statusCode)
     {
         var errors = validationException.Errors
             .GroupBy(e => e.PropertyName)
             .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-
-        var problems = new ProblemDetails
+        var problem = new ProblemDetails
         {
-            Type = $"https://httpstatuses.com/{statusCode}",
-            Title = "One or more validation errors occurred.",
+            Type = "https://tools.ietf.org/html/rfc7807#section-3.1",
+            Title = "One or more validation errors occurred",
             Status = statusCode,
-            Detail = "See the errors property for details.",
+            Detail = "See the 'errors' property for more details",
             Instance = context.Request.Path
         };
-        problems.Extensions.Add("errors", errors);
-        return problems;
+        problem.Extensions["errors"] = errors;
+        return problem;
     }
 }

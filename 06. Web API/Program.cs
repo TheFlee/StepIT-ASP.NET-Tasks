@@ -1,18 +1,18 @@
 using _06._Web_API.Data;
-using _06._Web_API.DTOs.ProjectDTOs;
-using _06._Web_API.DTOs.TaskItemDTOs;
 using _06._Web_API.Mappings;
 using _06._Web_API.Middleware;
 using _06._Web_API.Models;
 using _06._Web_API.Services;
-using _06._Web_API.Services.Interfaces;
-using _06._Web_API.Validators;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,59 +20,157 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(
     options =>
     {
-        options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+        options.SwaggerDoc("v1", new OpenApiInfo
         {
             Version = "v1",
             Title = "TaskFlow API",
-            Description = "An API to manage projects and tasks. This API includes all CRUD operations.",
-
+            Description = "API for managing projects and tasks. This API includes all CRUD operations for managing projects and tasks.",
             Contact = new OpenApiContact
             {
                 Name = "TaskFlow Team",
-                Email = "support@taskflow.com"
+                Email = "support@taslflow.com"
             },
             License = new OpenApiLicense
             {
-                Name = "MIT License",
-                Url = new Uri("https://opensource.org/licenses/MIT")
+                Name = "MIT Licence",
+                Url = new Uri("https://opensource.org/license/mit")
             }
-            });
+
+        });
 
         var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
         var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
 
         if (File.Exists(xmlPath)) options.IncludeXmlComments(xmlPath);
+
+
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Description = """
+                JWT Suthorization header using the Bearer scheme. 
+                Example: Authorization: Bearer {token}
+                """,
+            Name = "Authorization",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.ApiKey,
+            Scheme = "Bearer"
+        });
+
+        options.AddSecurityRequirement(
+            new OpenApiSecurityRequirement
+            {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id="Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+            });
     }
+
     );
 
-
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnectionString");
+var connectionString = builder
+                        .Configuration
+                        .GetConnectionString("DefaultConnectionString");
 
 builder.Services.AddDbContext<TaskFlowDbContext>(
     options => options.UseSqlServer(connectionString)
     );
 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    .AddEntityFrameworkStores<TaskFlowDbContext>();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(
+    options =>
+    {
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 6;
 
-builder.Services.AddScoped<ITaskItemService, TaskItemService>();
+        options.User.RequireUniqueEmail = true;
+        options.SignIn.RequireConfirmedEmail = false;
+    }
+
+)
+    .AddEntityFrameworkStores<TaskFlowDbContext>()
+    .AddDefaultTokenProviders();
+
+// JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["SecretKey"];
+var issuer = jwtSettings["Issuer"];
+var audience = jwtSettings["Audience"];
+
+builder.Services.AddAuthentication(
+    options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    }
+    )
+    .AddJwtBearer(
+        options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = issuer,
+                ValidAudience = audience,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!)),
+                ClockSkew = TimeSpan.Zero
+            };
+        }
+    );
+
+// Authorization policies
+builder.Services.AddAuthorization(
+    options =>
+    {
+        options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+        options.AddPolicy("AdminOrManager", policy => policy.RequireRole("Admin", "Manager"));
+        options.AddPolicy("UserOrAbove", policy => policy.RequireRole("Admin", "Manager", "User"));
+    }
+    );
+
+// Services
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<ITaskItemService, TaskItemService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-#region Fluent Validation DI
+#region FluentValidation DI
 //builder.Services.AddScoped<IValidator<CreateProjectRequest>, CreateProjectValidator>();
 //builder.Services.AddScoped<IValidator<UpdateProjectRequest>, UpdateProjectValidator>();
-
 //builder.Services.AddScoped<IValidator<CreateTaskItemRequest>, CreateTaskItemValidator>();
 //builder.Services.AddScoped<IValidator<UpdateTaskItemRequest>, UpdateTaskItemValidator>();
 #endregion
 
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+builder.Services.AddCors(
+    optons =>
+    {
+        optons.AddDefaultPolicy(
+            policy=> policy.WithOrigins(
+                "http://localhost:3000",
+                "http://127.0.0.1:3000" )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()
+            );
+    }
+    );
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
@@ -93,11 +191,29 @@ if (app.Environment.IsDevelopment())
             options.EnableTryItOutByDefault();
         }
         );
-    app.MapOpenApi();
 }
 app.UseMiddleware<GlobalExceptionMiddleware>();
+
+app.UseCors();
+
+app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    try
+    {
+        await RoleSeeder.SeedRolesAsync(services);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occured while seeding roles");
+    }
+}
 
 app.Run();

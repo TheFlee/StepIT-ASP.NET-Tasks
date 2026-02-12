@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace _06._Web_API.Models;
+﻿namespace _06._Web_API.Models;
 
 public class TaskItem
 {
@@ -14,9 +12,9 @@ public class TaskItem
 
     // foreign key
     public int ProjectId { get; set; }
-
-    //[JsonIgnore]
-    public Project? Project { get; set; } = null!;
+    
+    //navigation property
+    public Project Project { get; set; } = null!;
 }
 
 public enum TaskStatus

@@ -1,10 +1,10 @@
 ﻿using _06._Web_API.Common;
 using _06._Web_API.Data;
-using _06._Web_API.DTOs.TaskItemDTOs;
+using _06._Web_API.DTOs.Task_Items_DTOs;
 using _06._Web_API.Models;
-using _06._Web_API.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using TaskStatus = _06._Web_API.Models.TaskStatus;
 
 namespace _06._Web_API.Services;
 
@@ -18,22 +18,28 @@ public class TaskItemService : ITaskItemService
         _context = context;
         _mapper = mapper;
     }
-    public async Task<TaskItemResponseDTO> CreateAsync(CreateTaskItemRequest task)
-    {
-        var isProjectExists = await _context.Projects.AnyAsync(p => p.Id == task.ProjectId);
-        if (!isProjectExists)
-        {
-            throw new ArgumentException($"Project with ID {task.ProjectId} does not exist.");
-        }
 
-        var taskItem = _mapper.Map<TaskItem>(task);
+    public async Task<TaskItemResponseDto> CreateAsync(CreateTaskItemRequest createTaskItemRequest)
+    {
+        var isProjectExists = await _context
+                                        .Projects
+                                        .AnyAsync(p=> p.Id == createTaskItemRequest.ProjectId);
+
+        if (!isProjectExists)
+            throw new ArgumentException($"Project with ID {createTaskItemRequest.ProjectId} not found");
+        var taskItem = _mapper.Map<TaskItem>(createTaskItemRequest);
+
+       
 
         _context.TaskItems.Add(taskItem);
         await _context.SaveChangesAsync();
 
-        await _context.Entry(taskItem).Reference(t => t.Project).LoadAsync();
+        await _context
+                    .Entry(taskItem)
+                    .Reference(t => t.Project)
+                    .LoadAsync();
 
-        return _mapper.Map<TaskItemResponseDTO>(taskItem);
+        return _mapper.Map<TaskItemResponseDto>(taskItem);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -41,94 +47,153 @@ public class TaskItemService : ITaskItemService
         var task = await _context.TaskItems.FindAsync(id);
 
         if (task is null) return false;
+
         _context.TaskItems.Remove(task);
         await _context.SaveChangesAsync();
+
         return true;
     }
 
-    public async Task<IEnumerable<TaskItemResponseDTO>> GetAllAsync()
+    public async Task<IEnumerable<TaskItemResponseDto>> GetAllAsync()
     {
-        var taskItems = await _context.TaskItems.Include(t => t.Project).ToListAsync();
+        var taskItems = await _context
+                        .TaskItems
+                        .Include(t => t.Project)
+                        .ToListAsync();
 
-        return _mapper.Map<IEnumerable<TaskItemResponseDTO>>(taskItems);
-
+        return _mapper.Map<IEnumerable<TaskItemResponseDto>>(taskItems);
     }
 
-    public async Task<TaskItemResponseDTO?> GetByIdAsync(int id)
+    public async Task<TaskItemResponseDto?> GetByIdAsync(int id)
     {
-        var taskItem = await _context.TaskItems.Include(t => t.Project)
-                                               .FirstOrDefaultAsync(t => t.Id == id);
+        var taskItem = await _context
+            .TaskItems
+            .Include(t => t.Project)
+            .FirstOrDefaultAsync(t=> t.Id == id);
+
         if (taskItem is null) return null;
-        return _mapper.Map<TaskItemResponseDTO>(taskItem);
+
+        return _mapper.Map<TaskItemResponseDto>(taskItem);
     }
 
-    public async Task<IEnumerable<TaskItemResponseDTO>> GetByProjectIdAsync(int projectId)
+    public async Task<IEnumerable<TaskItemResponseDto>> GetByProjectIdAsync(int projectId)
     {
-        var taskItems = await _context.TaskItems.Where(t => t.ProjectId == projectId)
-                                       .Include(t => t.Project)
-                                       .ToListAsync();
-        return _mapper.Map<IEnumerable<TaskItemResponseDTO>>(taskItems);
+        var taskItems = await _context
+            .TaskItems
+            .Include(t=>t.Project)
+            .Where(t=> t.ProjectId == projectId)
+            .ToListAsync();
 
+        return _mapper.Map<IEnumerable<TaskItemResponseDto>>(taskItems);
     }
 
-    public async Task<TaskItemResponseDTO?> UpdateAsync(int id, UpdateTaskItemRequest taskItem)
-    {
-        var updatedTaskItem = await _context.TaskItems.Include(t => t.Project)
-                                                      .FirstOrDefaultAsync(t => t.Id == id);
-        if (updatedTaskItem is null) return null;
-
-        _mapper.Map(taskItem, updatedTaskItem);
-
-        await _context.SaveChangesAsync();
-
-        return _mapper.Map<TaskItemResponseDTO>(updatedTaskItem);
-
-    }
-
-    public async Task<PagedResult<TaskItemResponseDTO>> GetPagedAsync(TaskItemQueryParams queryParams)
+    public async Task<PagedResult<TaskItemResponseDto>> GetPagedAsync(TaskItemQueryParams queryParams)
     {
         queryParams.Validate();
+
         var query = _context.TaskItems.Include(t => t.Project).AsQueryable();
 
         // filter by ProjectId
-        if(queryParams.ProjectId.HasValue)
-        {
-            query = query.Where(t => t.ProjectId == queryParams.ProjectId.Value);
-        }
+        if (queryParams.ProjectId.HasValue)
+            query = query.Where(t => t.ProjectId == queryParams.ProjectId);
 
         // filter by Status
-        if (!string.IsNullOrEmpty(queryParams.Status))
+        if (!string.IsNullOrWhiteSpace(queryParams.Status))
         {
-            if(Enum.TryParse<Models.TaskStatus>(queryParams.Status, true, out var status))
+            if( Enum.TryParse<TaskStatus>(queryParams.Status, out var status))
             {
                 query = query.Where(t => t.Status == status);
             }
         }
 
         // filter by Priority
-        if (!string.IsNullOrEmpty(queryParams.Priority))
+        if (!string.IsNullOrWhiteSpace(queryParams.Priority))
         {
-            if(Enum.TryParse<Models.TaskPriority>(queryParams.Priority, true, out var priority))
+            if (Enum.TryParse<TaskPriority>(queryParams.Priority, out var priority))
             {
                 query = query.Where(t => t.Priority == priority);
             }
         }
 
-        // filter by Title and Description
-        if (!string.IsNullOrEmpty(queryParams.Search))
+
+        // search by Title and Description
+
+        if (!string.IsNullOrWhiteSpace(queryParams.Search))
         {
             var searchTerm = queryParams.Search.ToLower();
-            query = query.Where(t => t.Title.ToLower().Contains(searchTerm) || 
-                                     t.Description.ToLower().Contains(searchTerm));
+
+            query = query.Where(
+                t => t.Title.ToLower().Contains(searchTerm)
+                || t.Description.ToLower().Contains(searchTerm));
         }
 
-        // Pagination
-        var totalCount = await query.CountAsync();
+        // Sorting
+        if (!string.IsNullOrWhiteSpace(queryParams.Sort))
+            query = ApplySorting(query, queryParams.Sort, queryParams.SortDirection);
+        else
+            query = query.OrderBy(t=> t.Id);
+
+            // Pagination
+            var totalCount = await query.CountAsync();
+
         var skip = (queryParams.Page - 1) * queryParams.PageSize;
-        var tasks = await query.Skip(skip)
-                               .Take(queryParams.PageSize)
-                               .ToListAsync();
-        var taskDTOs = _mapper.Map<IEnumerable<TaskItemResponseDTO>>(tasks);
-        return PagedResult<TaskItemResponseDTO>.Create(taskDTOs, queryParams.Page, queryParams.PageSize, totalCount);
+
+        var tasks = await query
+                            .Skip(skip)
+                            .Take(queryParams.PageSize)
+                            .ToListAsync();
+
+        var taskDtos = _mapper.Map<IEnumerable<TaskItemResponseDto>>(tasks);
+
+        return PagedResult<TaskItemResponseDto>.Create(
+            taskDtos,
+            queryParams.Page,
+            queryParams.PageSize,
+            totalCount
+            );
+    }
+
+    private IQueryable<TaskItem> ApplySorting(IQueryable<TaskItem> query, string sort, string? sortDirection)
+    {
+        var isDescending = sortDirection?.ToLower() == "desc";
+
+        return sort.ToLower() switch
+        {
+            "title" => isDescending
+                                ? query.OrderByDescending(t => t.Title)
+                                : query.OrderBy(t => t.Title),
+
+            "createdat" => isDescending
+                                ? query.OrderByDescending(t => t.CreatedAt)
+                                : query.OrderBy(t => t.CreatedAt),
+
+            "status" => isDescending
+                                ? query.OrderByDescending(t => t.Status)
+                                : query.OrderBy(t => t.Status),
+
+            "priority" => isDescending
+                                ? query.OrderByDescending(t => t.Priority)
+                                : query.OrderBy(t => t.Priority),
+
+            _ => query.OrderBy(t => t.Id)
+
+
+        };
+    }
+
+    public async Task<TaskItemResponseDto?> UpdateAsync(int id, UpdateTaskItemRequest updateTaskItemRequest)
+    {
+        var task = await _context
+                                .TaskItems
+                                .Include(t=>t.Project)
+                                .FirstOrDefaultAsync(t=> t.Id == id);
+
+        if (task is null) return null;
+
+        _mapper.Map(updateTaskItemRequest, task);
+
+        await _context.SaveChangesAsync();
+
+        return _mapper.Map<TaskItemResponseDto>(task);
     }
 }

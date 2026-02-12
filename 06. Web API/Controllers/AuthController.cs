@@ -1,6 +1,6 @@
 ﻿using _06._Web_API.Common;
-using _06._Web_API.DTOs.AuthDTOs;
-using _06._Web_API.Services.Interfaces;
+using _06._Web_API.DTOs.Auth_DTOs;
+using _06._Web_API.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace _06._Web_API.Controllers;
@@ -15,18 +15,54 @@ public class AuthController : ControllerBase
     {
         _authService = authService;
     }
-
+    /// <summary>
+    /// Registers a new user in the system.
+    /// </summary>
+    /// <param name="registerRequest">User registration data (email, password, etc.)</param>
+    /// <returns>
+    /// Authentication response containing access and refresh tokens.
+    /// </returns>
+    /// <response code="200">User successfully registered</response>
+    /// <response code="400">Invalid registration data</response>
     [HttpPost("register")]
-    public async Task<ActionResult<ApiResponse<AuthResponseDTO>>> Register([FromBody]RegisterRequest registerRequest)
+    public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Register(
+        [FromBody] RegisterRequest registerRequest)
     {
         var result = await _authService.RegisterAsync(registerRequest);
-        return Ok(ApiResponse<AuthResponseDTO>.SuccessResponse(result));
+        return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result));
     }
 
+
+    /// <summary>
+    /// Authenticates a user and returns JWT tokens.
+    /// </summary>
+    /// <param name="loginRequest">User login credentials (email and password)</param>
+    /// <returns>
+    /// Authentication response containing access and refresh tokens.
+    /// </returns>
+    /// <response code="200">User successfully authenticated</response>
+    /// <response code="401">Invalid credentials</response>
     [HttpPost("login")]
-    public async Task<ActionResult<ApiResponse<AuthResponseDTO>>> Login([FromBody]LoginRequest loginRequest)
+    public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Login([FromBody]LoginRequest loginRequest)
     {
         var result = await _authService.LoginAsync(loginRequest);
-        return Ok(ApiResponse<AuthResponseDTO>.SuccessResponse(result));
+
+        return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result));
+    }
+
+    [HttpPost("refresh")]
+    public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Refresh([FromBody] RefreshTokenRequest refreshTokenRequest)
+    {
+        var result = await _authService.RefreshTokenAsync(refreshTokenRequest);
+
+        return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result));
+    }
+
+    [HttpPost("revoke")]
+    public async Task<ActionResult> Revoke([FromBody] RefreshTokenRequest refreshTokenRequest)
+    {
+         await _authService.RevokeRefreshTokenAsync(refreshTokenRequest.RefreshToken);
+
+        return Ok(ApiResponse<AuthResponseDto>.SuccessResponse("Refresh token revoked"));
     }
 }

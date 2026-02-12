@@ -1,7 +1,8 @@
 ﻿using _06._Web_API.Common;
-using _06._Web_API.DTOs.TaskItemDTOs;
-using _06._Web_API.Services.Interfaces;
+using _06._Web_API.DTOs.Task_Items_DTOs;
+using _06._Web_API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace _06._Web_API.Controllers;
 
@@ -10,78 +11,167 @@ namespace _06._Web_API.Controllers;
 public class TaskItemsController : ControllerBase
 {
     private readonly ITaskItemService _taskItemService;
+
     public TaskItemsController(ITaskItemService taskItemService)
     {
         _taskItemService = taskItemService;
     }
+
+    private static Dictionary<string, string[]> ToValidationErrors(ModelStateDictionary modelState)
+    {
+        return modelState
+            .Where(x => x.Value?.Errors.Count > 0)
+            .ToDictionary(
+                k => k.Key,
+                v => v.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+            );
+    }
+
+    /// <summary>
+    /// Retrieves all task items.
+    /// </summary>
+    /// <remarks>
+    /// Returns the full list of task items available in the system.
+    /// </remarks>
+    /// <returns>A collection of task items wrapped in ApiResponse.</returns>
+    /// <response code="200">Task items were successfully retrieved.</response>
     [HttpGet("all")]
-    public async Task<ActionResult<IEnumerable<TaskItemResponseDTO>>> GetAll()
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<TaskItemResponseDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<IEnumerable<TaskItemResponseDto>>>> GetAll()
     {
         var tasks = await _taskItemService.GetAllAsync();
-        return Ok(tasks);
+
+        return Ok(ApiResponse<IEnumerable<TaskItemResponseDto>>.SuccessResponse(tasks, "Task items returned successfully"));
     }
+
+    /// <summary>
+    /// Retrieves all task items. Filtered, Paginated
+    /// </summary>
+    /// <remarks>
+    /// Returns the full list of task items available in the system.
+    /// </remarks>
+    /// <returns>A collection of task items wrapped in ApiResponse.</returns>
+    /// <response code="200">Task items were successfully retrieved.</response>
+
     [HttpGet]
-    public async Task<ActionResult<PagedResult<TaskItemResponseDTO>>> GetPaged([FromQuery]TaskItemQueryParams queryParams)
+    [ProducesResponseType(typeof(ApiResponse<PagedResult<TaskItemResponseDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<PagedResult<TaskItemResponseDto>>>> GetPaged([FromQuery]TaskItemQueryParams queryParams)
     {
         var tasks = await _taskItemService.GetPagedAsync(queryParams);
-        return Ok(tasks);
+
+        return Ok(ApiResponse<PagedResult<TaskItemResponseDto>>.SuccessResponse(tasks, "Task items returned successfully"));
     }
-    [HttpGet("{id}")]
-    public async Task<ActionResult<TaskItemResponseDTO>> GetById(int id)
+
+    /// <summary>
+    /// Retrieves a task item by its identifier.
+    /// </summary>
+    /// <param name="id">The task item identifier.</param>
+    /// <returns>The task item details wrapped in ApiResponse.</returns>
+    /// <response code="200">The task item was found and returned.</response>
+    /// <response code="404">A task item with the specified identifier was not found.</response>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponse<TaskItemResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<TaskItemResponseDto>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<TaskItemResponseDto>>> GetById(int id)
     {
+        //throw new NullReferenceException();
         var task = await _taskItemService.GetByIdAsync(id);
-        if (task == null)
-        {
-            return NotFound($"TaskItem with ID {id} not found");
-        }
-        return Ok(task);
+
+        if (task is null)
+            return NotFound(ApiResponse<TaskItemResponseDto>.ErrorResponse($"Task item with ID {id} not found"));
+
+        return Ok(ApiResponse<TaskItemResponseDto>.SuccessResponse(task, "Task item returned successfully"));
     }
 
-    [HttpGet("project/{projectId}")]
-    public async Task<ActionResult<TaskItemResponseDTO>> GetByProjectId(int projectId)
+    /// <summary>
+    /// Retrieves all task items for a specific project.
+    /// </summary>
+    /// <param name="projectId">The project identifier.</param>
+    /// <returns>A collection of task items belonging to the specified project wrapped in ApiResponse.</returns>
+    /// <response code="200">Task items for the specified project were successfully retrieved.</response>
+    /// <response code="404">Project with the specified identifier was not found (if enforced by the service).</response>
+    [HttpGet("project/{projectId:int}")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<TaskItemResponseDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<TaskItemResponseDto>>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<IEnumerable<TaskItemResponseDto>>>> GetByProjectId(int projectId)
     {
-        var task = await _taskItemService.GetByProjectIdAsync(projectId);
-        if (task == null)
-        {
-            return NotFound($"TaskItem with Project ID {projectId} not found");
-        }
-        return Ok(task);
+        var tasks = await _taskItemService.GetByProjectIdAsync(projectId);
+
+        // Əgər sənin service boş list qaytarırsa -> 200 OK normaldır.
+        // Əgər project mövcud deyilsə və service null qaytarırsa -> 404 qaytarırıq.
+        if (tasks is null)
+            return NotFound(ApiResponse<IEnumerable<TaskItemResponseDto>>.ErrorResponse($"Project with ID {projectId} not found"));
+
+        return Ok(ApiResponse<IEnumerable<TaskItemResponseDto>>.SuccessResponse(tasks, "Task items returned successfully"));
     }
+
+    /// <summary>
+    /// Creates a new task item.
+    /// </summary>
+    /// <param name="createTaskItemRequest">The payload used to create a task item.</param>
+    /// <returns>The created task item wrapped in ApiResponse.</returns>
+    /// <response code="201">The task item was successfully created.</response>
+    /// <response code="400">The request body is invalid, failed validation, or references invalid related data.</response>
     [HttpPost]
-    public async Task<ActionResult<TaskItemResponseDTO>> Create([FromBody] CreateTaskItemRequest taskItem)
+    [ProducesResponseType(typeof(ApiResponse<TaskItemResponseDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<TaskItemResponseDto>), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<TaskItemResponseDto>>> Create([FromBody] CreateTaskItemRequest createTaskItemRequest)
     {
         if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+            return BadRequest(ApiResponse<TaskItemResponseDto>.ErrorResponse("Validation failed", ToValidationErrors(ModelState)));
 
-        var task = await _taskItemService.CreateAsync(taskItem);
-        return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
+        var task = await _taskItemService.CreateAsync(createTaskItemRequest);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = task.Id },
+            ApiResponse<TaskItemResponseDto>.SuccessResponse(task, "Task item created successfully")
+        );
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<TaskItemResponseDTO>> Update(int id, [FromBody] UpdateTaskItemRequest taskItem)
+    /// <summary>
+    /// Updates an existing task item by its identifier.
+    /// </summary>
+    /// <param name="id">The task item identifier.</param>
+    /// <param name="updateTaskItemRequest">The payload used to update a task item.</param>
+    /// <returns>The updated task item wrapped in ApiResponse.</returns>
+    /// <response code="200">The task item was successfully updated.</response>
+    /// <response code="400">The request body is invalid, failed validation, or contains invalid changes.</response>
+    /// <response code="404">A task item with the specified identifier was not found.</response>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponse<TaskItemResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<TaskItemResponseDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<TaskItemResponseDto>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<TaskItemResponseDto>>> Update(int id, [FromBody] UpdateTaskItemRequest updateTaskItemRequest)
     {
         if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-        var updatedTask = await _taskItemService.UpdateAsync(id, taskItem);
-        if (updatedTask == null)
-        {
-            return NotFound($"TaskItem with ID {id} not found");
-        }
-        return Ok(updatedTask);
+            return BadRequest(ApiResponse<TaskItemResponseDto>.ErrorResponse("Validation failed", ToValidationErrors(ModelState)));
+
+        var task = await _taskItemService.UpdateAsync(id, updateTaskItemRequest);
+
+        if (task is null)
+            return NotFound(ApiResponse<TaskItemResponseDto>.ErrorResponse($"Task item with ID {id} not found"));
+
+        return Ok(ApiResponse<TaskItemResponseDto>.SuccessResponse(task, "Task item updated successfully"));
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    /// <summary>
+    /// Deletes a task item by its identifier.
+    /// </summary>
+    /// <param name="id">The task item identifier.</param>
+    /// <returns>A result wrapped in ApiResponse.</returns>
+    /// <response code="200">The task item was successfully deleted.</response>
+    /// <response code="404">A task item with the specified identifier was not found.</response>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<object?>>> Delete(int id)
     {
-        var deletedTask = await _taskItemService.DeleteAsync(id);
-        if (!deletedTask)
-        {
-            return NotFound($"TaskItem with ID {id} not found");
-        }
-        return NoContent();
+        var isDeleted = await _taskItemService.DeleteAsync(id);
+
+        if (!isDeleted)
+            return NotFound(ApiResponse<object?>.ErrorResponse($"Task item with ID {id} not found"));
+
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "Task item deleted successfully"));
     }
 }

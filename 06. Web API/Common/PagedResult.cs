@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Components.Web;
-
-namespace _06._Web_API.Common;
+﻿namespace _06._Web_API.Common;
 
 public class PagedResult<T>
 {
@@ -10,12 +8,17 @@ public class PagedResult<T>
     public int TotalCount { get; set; }
 
     public int TotalPages 
-        => (int)Math.Ceiling((double)TotalCount / PageSize);
+        => Convert.ToInt32(Math.Ceiling(TotalCount / (double)PageSize));
     public bool HasPrevious 
         => Page > 1;
-    public bool HasNext 
+    public bool HasNext
         => Page < TotalPages;
-    public static PagedResult<T> Create(IEnumerable<T> items, int page, int pageSize, int totalCount)
+
+    public static PagedResult<T> Create(
+                                    IEnumerable<T> items,
+                                    int page,
+                                    int pageSize,
+                                    int totalCount)
     {
         return new PagedResult<T>
         {

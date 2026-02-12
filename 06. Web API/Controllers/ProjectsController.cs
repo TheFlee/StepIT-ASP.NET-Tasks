@@ -1,6 +1,7 @@
 ﻿using _06._Web_API.Common;
-using _06._Web_API.DTOs.ProjectDTOs;
-using _06._Web_API.Services.Interfaces;
+using _06._Web_API.DTOs.Project_DTOs;
+using _06._Web_API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace _06._Web_API.Controllers;
@@ -19,60 +20,115 @@ public class ProjectsController : ControllerBase
     /// <summary>
     /// Retrieves all projects.
     /// </summary>
-    /// <returns>List of projects in the system</returns>
+    /// <remarks>
+    /// Returns the full list of projects available in the system.
+    /// </remarks>
+    /// <returns>A collection of projects wrapped in ApiResponse.</returns>
+    /// <response code="200">Projects were successfully retrieved.</response>
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<IEnumerable<ProjectResponseDTO>>>> GetAll()
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<ProjectResponseDto>>), StatusCodes.Status200OK)]
+    //[Authorize(Roles ="Admin, Manager, User")]
+    [Authorize(Policy ="UserOrAbove")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<ProjectResponseDto>>>> GetAll()
     {
         var projects = await _projectService.GetAllAsync();
-        return Ok(ApiResponse<IEnumerable<ProjectResponseDTO>>.SuccessResponse(projects, "Projects returned successfully"));
+        return Ok(ApiResponse<IEnumerable<ProjectResponseDto>>.SuccessResponse(projects, "Projects returned successfully"));
     }
-    [HttpGet("{id}")]
-    public async Task<ActionResult<ProjectResponseDTO>> GetById(int id)
+
+    /// <summary>
+    /// Retrieves a project by its identifier.
+    /// </summary>
+    /// <param name="id">The project identifier.</param>
+    /// <returns>The project details wrapped in ApiResponse.</returns>
+    /// <response code="200">The project was found and returned.</response>
+    /// <response code="404">A project with the specified identifier was not found.</response>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponse<ProjectResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ProjectResponseDto>), StatusCodes.Status404NotFound)]
+    [Authorize(Policy = "UserOrAbove")]
+    public async Task<ActionResult<ApiResponse<ProjectResponseDto>>> GetById(int id)
     {
         var project = await _projectService.GetByIdAsync(id);
 
         if (project is null)
-        {
-            return NotFound($"Project with ID {id} not found");
-        }
+            return NotFound(ApiResponse<ProjectResponseDto>.ErrorResponse($"Project with ID {id} not found"));
 
-        return Ok(project);
+        return Ok(ApiResponse<ProjectResponseDto>.SuccessResponse(project, "Project returned successfully"));
     }
+
+    /// <summary>
+    /// Creates a new project.
+    /// </summary>
+    /// <param name="createProjectRequest">The payload used to create a project.</param>
+    /// <returns>The created project wrapped in ApiResponse.</returns>
+    /// <response code="201">The project was successfully created.</response>
+    /// <response code="400">The request body is invalid or failed validation.</response>
     [HttpPost]
-    public async Task<ActionResult<ProjectResponseDTO>> Create([FromBody] CreateProjectRequest project)
+    [ProducesResponseType(typeof(ApiResponse<ProjectResponseDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<ProjectResponseDto>), StatusCodes.Status400BadRequest)]
+    [Authorize(Policy = "AdminOrManager")]
+    public async Task<ActionResult<ApiResponse<ProjectResponseDto>>> Create([FromBody] CreateProjectRequest createProjectRequest)
     {
-        if(!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-        var createdProject = await _projectService.CreateAsync(project);
+        if (!ModelState.IsValid)
+            return BadRequest(ApiResponse<ProjectResponseDto>.ErrorResponse("Validation failed", ModelState));
 
-        return CreatedAtAction(nameof(GetById), new { id = createdProject.Id }, createdProject);
+        var createdProject = await _projectService.CreateAsync(createProjectRequest);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = createdProject.Id },
+            ApiResponse<ProjectResponseDto>.SuccessResponse(createdProject, "Project created successfully")
+        );
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult<ProjectResponseDTO>> Update(int id, [FromBody] UpdateProjectRequest project)
+    /// <summary>
+    /// Updates an existing project by its identifier.
+    /// </summary>
+    /// <param name="id">The project identifier.</param>
+    /// <param name="updateProjectRequest">The payload used to update a project.</param>
+    /// <returns>The updated project wrapped in ApiResponse.</returns>
+    /// <response code="200">The project was successfully updated.</response>
+    /// <response code="400">The request body is invalid or failed validation.</response>
+    /// <response code="404">A project with the specified identifier was not found.</response>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponse<ProjectResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ProjectResponseDto>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<ProjectResponseDto>), StatusCodes.Status404NotFound)]
+    [Authorize(Policy = "AdminOrManager")]
+    public async Task<ActionResult<ApiResponse<ProjectResponseDto>>> Update(
+        int id,
+        [FromBody] UpdateProjectRequest updateProjectRequest)
     {
-        if(!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-        var updatedProject = await _projectService.UpdateAsync(id, project);
+        if (!ModelState.IsValid)
+            return BadRequest(ApiResponse<ProjectResponseDto>.ErrorResponse("Validation failed", ModelState));
+
+        var updatedProject = await _projectService.UpdateAsync(id, updateProjectRequest);
+
         if (updatedProject is null)
-        {
-            return NotFound($"Project with ID {id} not found");
-        }
-        return Ok(updatedProject);
+            return NotFound(ApiResponse<ProjectResponseDto>.ErrorResponse($"Project with ID {id} not found"));
+
+        return Ok(ApiResponse<ProjectResponseDto>.SuccessResponse(updatedProject, "Project updated successfully"));
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    /// <summary>
+    /// Deletes a project by its identifier.
+    /// </summary>
+    /// <param name="id">The project identifier.</param>
+    /// <returns>A result wrapped in ApiResponse.</returns>
+    /// <response code="200">The project was successfully deleted.</response>
+    /// <response code="404">A project with the specified identifier was not found.</response>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status404NotFound)]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<ActionResult<ApiResponse<object?>>> Delete(int id)
     {
-        var deletedProject = await _projectService.DeleteAsync(id);
-        if (!deletedProject)
-        {
-            return NotFound($"Project with ID {id} not found");
-        }
-        return NoContent();
+        var deleted = await _projectService.DeleteAsync(id);
+
+        if (!deleted)
+            return NotFound(ApiResponse<object?>.ErrorResponse($"Project with ID {id} not found"));
+
+        // Wrapper-lə 204 qaytarsan body göstərilməyəcək. Ona görə vahid wrapper üçün 200 daha məntiqlidir.
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "Project deleted successfully"));
     }
 }
