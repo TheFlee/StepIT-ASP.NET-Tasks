@@ -25,5 +25,5 @@ public class UpdateProjectRequest
     /// Can include additional details or notes about the project.
     /// </remarks>
     /// <example>API for managing projects and task items with full Swagger documentation</example>
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; } = string.Empty;
 }

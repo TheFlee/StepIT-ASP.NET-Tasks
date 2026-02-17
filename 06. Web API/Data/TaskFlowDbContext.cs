@@ -12,6 +12,7 @@ public class TaskFlowDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +31,14 @@ public class TaskFlowDbContext : IdentityDbContext<ApplicationUser>
                     .HasMaxLength(1000);
                 project.Property(p => p.CreatedAt)
                     .IsRequired();
+                project.Property(p => p.OwnerId)
+                    .IsRequired()
+                    .HasMaxLength(450);
+
+                project.HasOne(p => p.Owner)
+                    .WithMany()
+                    .HasForeignKey(p => p.OwnerId)
+                    .OnDelete(DeleteBehavior.Restrict);
             }
             );
 
@@ -58,13 +67,32 @@ public class TaskFlowDbContext : IdentityDbContext<ApplicationUser>
             }
             );
 
+        // Refresh token
         modelBuilder.Entity<RefreshToken>(
             refresh =>
             {
                 refresh.HasKey(rt => rt.Id);
                 refresh.HasIndex(rt => rt.JwtId).IsUnique();
                 refresh.Property(rt => rt.JwtId).IsRequired().HasMaxLength(64);
-                refresh.Property(rt => rt.UserId).IsRequired().HasMaxLength(64);
+                refresh.Property(rt => rt.UserId).IsRequired().HasMaxLength(450);
+            }
+            );
+
+        // Project Member
+        modelBuilder.Entity<ProjectMember>(
+            member =>
+            {
+                member.HasKey(m => new { m.ProjectId, m.UserId });
+                member.HasOne(m => m.Project)
+                    .WithMany(p => p.Members)
+                    .HasForeignKey(m => m.ProjectId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                member.HasOne(m => m.User)
+                    .WithMany(u=> u.ProjectMemberships)
+                    .HasForeignKey(m => m.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                member.Property(m => m.UserId)
+                    .HasMaxLength(450);
             }
             );
     }

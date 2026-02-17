@@ -9,5 +9,6 @@ public class ApplicationUser: IdentityUser
     public DateTimeOffset CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTimeOffset? UpdatedAt { get; set; } = null!;
 
-
+    public IEnumerable<ProjectMember> ProjectMemberships { get; set; }
+        = new List<ProjectMember>();
 }

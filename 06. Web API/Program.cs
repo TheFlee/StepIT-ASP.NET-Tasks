@@ -1,3 +1,4 @@
+using _06._Web_API.Authorization;
 using _06._Web_API.Data;
 using _06._Web_API.Mappings;
 using _06._Web_API.Middleware;
@@ -6,9 +7,9 @@ using _06._Web_API.Services;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
@@ -137,16 +138,49 @@ builder.Services.AddAuthentication(
 builder.Services.AddAuthorization(
     options =>
     {
-        options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-        options.AddPolicy("AdminOrManager", policy => policy.RequireRole("Admin", "Manager"));
-        options.AddPolicy("UserOrAbove", policy => policy.RequireRole("Admin", "Manager", "User"));
+        options.AddPolicy(
+            "AdminOnly", 
+            policy 
+                => policy.RequireRole("Admin"));
+        
+        options.AddPolicy(
+            "AdminOrManager", 
+            policy 
+                => policy.RequireRole("Admin", "Manager"));
+        
+        options.AddPolicy(
+            "UserOrAbove", 
+            policy 
+                => policy.RequireRole("Admin", "Manager", "User"));
+        
+
+        options.AddPolicy(
+            "ProjectOwnerOrAdmin", 
+                policy => 
+                    policy.Requirements.Add(new ProjectOwnerOrAdminRequirment()));
+        
+
+        options.AddPolicy(
+            "ProjectMemberOrHigher", 
+                policy => 
+                policy.Requirements.Add(new ProjectMemberOrHigherRequirment()));
+        
+
+        options.AddPolicy(
+            "TaskStatusChange", 
+            policy => 
+                policy.Requirements.Add(new TaskStatusChangeRequirment()));
     }
     );
+
 
 // Services
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ITaskItemService, TaskItemService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAuthorizationHandler, ProjectOwnerOrAdminHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, ProjectMemberOrHigherHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, TaskStatusChangeHandler>();
 
 #region FluentValidation DI
 //builder.Services.AddScoped<IValidator<CreateProjectRequest>, CreateProjectValidator>();
@@ -189,6 +223,7 @@ if (app.Environment.IsDevelopment())
             options.EnableFilter();
             options.EnableDeepLinking();
             options.EnableTryItOutByDefault();
+            options.EnablePersistAuthorization();
         }
         );
 }

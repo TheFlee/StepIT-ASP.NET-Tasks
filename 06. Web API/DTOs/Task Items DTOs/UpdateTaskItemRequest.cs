@@ -1,4 +1,5 @@
 ﻿using _06._Web_API.Models;
+using TaskStatus = _06._Web_API.Models.TaskStatus;
 
 namespace _06._Web_API.DTOs.Task_Items_DTOs;
 
@@ -36,6 +37,6 @@ public class UpdateTaskItemRequest
     /// Represents the workflow state of the task (e.g. Pending, InProgress, Completed).
     /// </remarks>
     /// <example>InProgress</example>
-    public Models.TaskStatus Status { get; set; }
+    public TaskStatus Status { get; set; }
     public TaskPriority Priority { get; set; }
 }
