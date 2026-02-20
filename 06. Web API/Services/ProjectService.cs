@@ -56,6 +56,17 @@ public class ProjectService : IProjectService
         return true;
     }
 
+    public async Task<bool> ApproveAsync(int projectId)
+    {
+        var project = await _context.Projects.FindAsync(projectId);
+        if (project is null) return false;
+
+        project.Status = ProjectStatus.Published;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<ProjectResponseDto> CreateAsync(
         CreateProjectRequest createProjectRequest, 
         string ownerId)
@@ -63,6 +74,7 @@ public class ProjectService : IProjectService
         var project = _mapper.Map<Project>(createProjectRequest);
 
         project.OwnerId = ownerId;
+        project.Status = ProjectStatus.Pending;
 
         _context.Projects.Add(project);
 
@@ -95,11 +107,11 @@ public class ProjectService : IProjectService
         if (roles.Contains("Admin")) { }
         else if(roles.Contains("Manager"))
         {
-            query = query.Where(p => p.OwnerId == userId || p.Members.Any(m => m.UserId == userId));
+            query = query.Where(p => p.Status == ProjectStatus.Published && p.OwnerId == userId || p.Members.Any(m => m.UserId == userId));
         }
         else
         {
-            query = query.Where(p => p.Members.Any(m => m.UserId == userId));
+            query = query.Where(p => p.Status == ProjectStatus.Published && p.Members.Any(m => m.UserId == userId));
         }
         var projects = await query.ToListAsync();
 
@@ -165,6 +177,17 @@ public class ProjectService : IProjectService
                     .Include(p => p.Tasks)
                     .Include(p => p.Members)
                     .FirstOrDefaultAsync(p => p.Id == id);
+    }
+
+    public async Task<bool> RejectAsync(int projectId)
+    {
+        var project = await _context.Projects.FindAsync(projectId);
+        if (project is null) return false;
+
+        project.Status = ProjectStatus.Rejected;
+
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     public async Task<bool> RemoveMemberAsync(int projectId, string userId)

@@ -15,5 +15,7 @@ namespace _06._Web_API.Services
         Task<IEnumerable<AvailableUserDto>> GetAvailableUsersToAddAsync(int projectId);
         Task<bool> AddMemberAsync(int projectId, string userIdOrEmail);
         Task<bool> RemoveMemberAsync(int projectId, string userId);
+        Task<bool> ApproveAsync(int projectId);
+        Task<bool> RejectAsync(int projectId);
     }
 }

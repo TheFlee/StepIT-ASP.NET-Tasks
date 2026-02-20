@@ -261,4 +261,34 @@ public class ProjectsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{projectId}/approve")]
+    public async Task<IActionResult> Approve(int projectId)
+    {
+        var project = await _projectService.GetProjectEntityAsync(projectId);
+        if (project is null)
+            return NotFound($"Project with ID {projectId} not found");
+        var authResult = await _authorizationService
+                                    .AuthorizeAsync(User, project, "AdminOnly");
+        if (!authResult.Succeeded)
+            return Forbid();
+        var isApproved = await _projectService.ApproveAsync(projectId);
+        if (!isApproved)
+            return BadRequest("Unable to approve the project");
+        return NoContent();
+    }
+    [HttpPost("{projectId}/reject")]
+    public async Task<IActionResult> Reject(int projectId)
+    {
+        var project = await _projectService.GetProjectEntityAsync(projectId);
+        if (project is null)
+            return NotFound($"Project with ID {projectId} not found");
+        var authResult = await _authorizationService
+                                    .AuthorizeAsync(User, project, "AdminOnly");
+        if (!authResult.Succeeded)
+            return Forbid();
+        var isRejected = await _projectService.RejectAsync(projectId);
+        if (!isRejected)
+            return BadRequest("Unable to reject the project");
+        return NoContent();
+    }
 }

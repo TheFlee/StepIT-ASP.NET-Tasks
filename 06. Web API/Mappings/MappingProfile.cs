@@ -11,11 +11,13 @@ public class MappingProfile:Profile
 		// Project
 
 		CreateMap<Project, ProjectResponseDto>()
-			.ForMember(dest=>dest.TaskCount, opt=> opt.MapFrom(src=> src.Tasks.Count()));
+			.ForMember(dest => dest.TaskCount, opt => opt.MapFrom(src => src.Tasks.Count()))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
-		CreateMap<CreateProjectRequest, Project>()
+        CreateMap<CreateProjectRequest, Project>()
 			.ForMember(dest => dest.Id, opt => opt.Ignore())
-			.ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.Status, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
 			.ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
 			.ForMember(dest => dest.Tasks, opt => opt.Ignore());
 
@@ -28,9 +30,9 @@ public class MappingProfile:Profile
 		// TaskItem
 
 		CreateMap<TaskItem, TaskItemResponseDto>()
-			.ForMember(dest=> dest.Status, opt=> opt.MapFrom(src=> src.Status.ToString()))
-			.ForMember(dest=> dest.Priority, opt=> opt.MapFrom(src=> src.Priority.ToString()))
-			.ForMember(dest=> dest.ProjectName, opt=> opt.MapFrom(src=> src.Project.Name));
+			.ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+			.ForMember(dest => dest.Priority, opt => opt.MapFrom(src => src.Priority.ToString()))
+			.ForMember(dest => dest.ProjectName, opt => opt.MapFrom(src => src.Project.Name));
 
         CreateMap<CreateTaskItemRequest, TaskItem>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
