@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace _06._Web_API.DTOs.Task_Items_DTOs;
+namespace _06._Web_API.DTOs;
 
 public class TaskItemQueryParams
 {

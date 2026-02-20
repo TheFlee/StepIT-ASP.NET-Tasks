@@ -1,4 +1,4 @@
-﻿namespace _06._Web_API.DTOs.Auth_DTOs;
+﻿namespace _06._Web_API.DTOs;
 
 public class RegisterRequest
 {
@@ -68,7 +68,6 @@ public class AuthResponseDto
 
     public IEnumerable<string> Roles { get; set; } = new List<string>();
 }
-
 public class RefreshTokenRequest
 {
     public string RefreshToken { get; set; } = string.Empty;

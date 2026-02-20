@@ -1,5 +1,5 @@
 ﻿using _06._Web_API.Common;
-using _06._Web_API.DTOs.Auth_DTOs;
+using _06._Web_API.DTOs;
 using _06._Web_API.Services;
 using Microsoft.AspNetCore.Mvc;
 

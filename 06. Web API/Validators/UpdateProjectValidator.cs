@@ -1,4 +1,4 @@
-﻿using _06._Web_API.DTOs.Project_DTOs;
+﻿using _06._Web_API.DTOs;
 using FluentValidation;
 
 namespace _06._Web_API.Validators;

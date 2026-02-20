@@ -9,10 +9,12 @@ public class TaskFlowDbContext : IdentityDbContext<ApplicationUser>
     public TaskFlowDbContext(DbContextOptions options)
         : base(options)
     { }
+
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
+    public DbSet<TaskAttachment> Attachments => Set<TaskAttachment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -93,6 +95,46 @@ public class TaskFlowDbContext : IdentityDbContext<ApplicationUser>
                     .OnDelete(DeleteBehavior.Cascade);
                 member.Property(m => m.UserId)
                     .HasMaxLength(450);
+            }
+            );
+
+        // TaskAttachment
+        modelBuilder.Entity<TaskAttachment>(
+            attachment =>
+            {
+                attachment.HasKey(ta => ta.Id);
+
+                attachment
+                    .Property(ta => ta.OriginalFileName)
+                    .IsRequired()
+                    .HasMaxLength(500);
+
+                attachment
+                    .Property(ta => ta.StoredFileName)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                attachment
+                    .Property(ta => ta.ContentType)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                attachment
+                    .Property(ta => ta.UploadedUserId)
+                    .IsRequired()
+                    .HasMaxLength(450);
+
+                attachment
+                    .HasOne(ta => ta.TaskItem)
+                    .WithMany(t => t.Attachments)
+                    .HasForeignKey(ta => ta.TaskItemId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                attachment
+                    .HasOne(ta => ta.UploadedUser)
+                    .WithMany()
+                    .HasForeignKey(ta => ta.UploadedUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             }
             );
     }

@@ -1,9 +1,7 @@
 ﻿using _06._Web_API.Common;
-using _06._Web_API.DTOs.Auth_DTOs;
+using _06._Web_API.DTOs;
 using _06._Web_API.Models;
-using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 

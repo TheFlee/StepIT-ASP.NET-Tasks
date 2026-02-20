@@ -1,4 +1,4 @@
-﻿using _06._Web_API.DTOs.Project_DTOs;
+﻿using _06._Web_API.DTOs;
 using _06._Web_API.Models;
 
 namespace _06._Web_API.Services

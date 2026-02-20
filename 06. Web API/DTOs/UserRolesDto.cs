@@ -1,4 +1,4 @@
-﻿namespace _06._Web_API.DTOs.Auth_DTOs;
+﻿namespace _06._Web_API.DTOs;
 
 public class UserWithRolesDto
 {

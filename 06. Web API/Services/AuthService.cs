@@ -1,8 +1,10 @@
-﻿using _06._Web_API.Data;
-using _06._Web_API.DTOs.Auth_DTOs;
+﻿using _06._Web_API.Config;
+using _06._Web_API.Data;
+using _06._Web_API.DTOs;
 using _06._Web_API.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -14,18 +16,20 @@ public class AuthService : IAuthService
 {
 
     private const string RefreshTokenType = "refresh";
+
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IConfiguration _configuration;
+
     private readonly TaskFlowDbContext _context;
+    private readonly JwtConfig _config;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
-        IConfiguration configuration,
-        TaskFlowDbContext context)
+        TaskFlowDbContext context,
+        IOptions<JwtConfig> config)
     {
         _userManager = userManager;
-        _configuration = configuration;
         _context = context;
+        _config = config.Value;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequest registerRequest)
@@ -113,19 +117,17 @@ public class AuthService : IAuthService
 
     private async Task<AuthResponseDto> GenerateTokensAsync(ApplicationUser user)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var accessExpirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"]!);
-        var refreshExpirationDays = int.Parse(jwtSettings["RefreshTokenExpirationDays"]!);
 
-        var accessToken = await GenerateAccessTokenAsync(user, accessExpirationMinutes);
-        var (refreshEntity, refreshJwt) = await CreateRefreshTokenJwtAsync(user.Id, refreshExpirationDays);
+
+        var accessToken = await GenerateAccessTokenAsync(user, _config.ExpirationMinutes);
+        var (refreshEntity, refreshJwt) = await CreateRefreshTokenJwtAsync(user.Id, _config.RefreshTokenExpirationDays);
 
         var roles = await _userManager.GetRolesAsync(user);
 
         return new AuthResponseDto
         {
             AccessToken = accessToken,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(accessExpirationMinutes),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(_config.ExpirationMinutes),
             RefreshToken = refreshJwt,
             RefreshTokenExpiresAt = refreshEntity.ExpiresAt,
             Email = user.Email ?? string.Empty,
@@ -135,12 +137,7 @@ public class AuthService : IAuthService
 
     private async Task<string> GenerateAccessTokenAsync(ApplicationUser user, int expirationMinutes)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured.");
-        var issuer = jwtSettings["Issuer"] ?? "TaskFlow";
-        var audience = jwtSettings["Audience"] ?? "TaskFlowUsers";
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.SecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var roles = await _userManager.GetRolesAsync(user);
 
@@ -155,8 +152,8 @@ public class AuthService : IAuthService
             claims.Add(new Claim(ClaimTypes.Role, role));
 
         var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
+            issuer: _config.Issuer,
+            audience: _config.Audience,
             claims: claims,
             expires: DateTime.UtcNow.AddMinutes(expirationMinutes),
             signingCredentials: credentials
@@ -167,16 +164,10 @@ public class AuthService : IAuthService
 
     private async Task<(RefreshToken entity, string jwt)> CreateRefreshTokenJwtAsync(string userId, int expirationDays)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var refreshSecretKey = jwtSettings["RefreshTokenSecretKey"]
-            ?? throw new InvalidOperationException("JWT RefreshTokenSecretKey or SecretKey is not configured.");
-        var issuer = jwtSettings["Issuer"];
-        var audience = jwtSettings["Audience"];
-
         var jti = Guid.NewGuid().ToString();
         var expiresAt = DateTime.UtcNow.AddDays(expirationDays);
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(refreshSecretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.RefreshTokenSecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var claims = new List<Claim>
         {
@@ -187,8 +178,8 @@ public class AuthService : IAuthService
         };
 
         var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
+            issuer: _config.Issuer,
+            audience: _config.Audience,
             claims: claims,
             expires: expiresAt,
             signingCredentials: credentials
@@ -211,23 +202,17 @@ public class AuthService : IAuthService
 
     private (ClaimsPrincipal principal, string jti) ValidateRefreshJwtAndGetJti(string refreshToken, bool validateLifetime = true)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var refreshSecretKey = jwtSettings["RefreshTokenSecretKey"]
-            ?? throw new InvalidOperationException("JWT RefreshTokenSecretKey or SecretKey is not configured.");
-        var issuer = jwtSettings["Issuer"];
-        var audience = jwtSettings["Audience"];
-
         var handler = new JwtSecurityTokenHandler();
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(refreshSecretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.RefreshTokenSecretKey));
 
         var principal = handler.ValidateToken(refreshToken, new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = key,
             ValidateIssuer = true,
-            ValidIssuer = issuer,
+            ValidIssuer = _config.Issuer,
             ValidateAudience = true,
-            ValidAudience = audience,
+            ValidAudience = _config.Audience,
             ValidateLifetime = validateLifetime,
             ClockSkew = TimeSpan.Zero
         }, out var validatedToken);

@@ -1,15 +1,40 @@
 ﻿using _06._Web_API.Models;
 using TaskStatus = _06._Web_API.Models.TaskStatus;
 
-namespace _06._Web_API.DTOs.Task_Items_DTOs;
+namespace _06._Web_API.DTOs;
 
-/// <summary>
-/// Represents the data required to update an existing task item.
-/// </summary>
-/// <remarks>
-/// This DTO is used when updating a task item within a project.
-/// Only the provided fields will be updated according to the API implementation.
-/// </remarks>
+public class TaskItemResponseDto
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string Priority { get; set; } = string.Empty;
+    public int ProjectId { get; set; }
+    public string ProjectName { get; set; } = string.Empty;
+}
+
+public class CreateTaskItemRequest
+{
+    /// <summary>
+    /// Task Item Title
+    /// </summary>
+    /// <example>Do something</example>
+    public string Title { get; set; } = string.Empty;
+    /// <summary>
+    /// Task Item Description
+    /// </summary>
+    /// <example>Description for task</example>
+    public string Description { get; set; } = string.Empty;
+
+    public TaskPriority Priority { get; set; }
+    /// <summary>
+    /// Project ID
+    /// </summary>
+    /// <example>1</example>
+    public int ProjectId { get; set; }
+}
+
 public class UpdateTaskItemRequest
 {
     /// <summary>
@@ -40,3 +65,10 @@ public class UpdateTaskItemRequest
     public TaskStatus Status { get; set; }
     public TaskPriority Priority { get; set; }
 }
+
+public class TaskStatusUpdateRequest
+{
+    public TaskStatus Status { get; set; } = TaskStatus.ToDo;
+}
+
+
