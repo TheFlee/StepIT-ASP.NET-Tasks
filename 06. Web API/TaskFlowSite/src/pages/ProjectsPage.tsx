@@ -55,7 +55,7 @@ export default function ProjectsPage() {
           <button
             type="button"
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center justify-center py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#0747a6] transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#_0747a6] transition-colors cursor-pointer"
           >
             Create project
           </button>
@@ -128,7 +128,7 @@ export default function ProjectsPage() {
                 <button
                   type="submit"
                   disabled={creating}
-                  className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#0747a6] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#_0747a6] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {creating ? 'Creating…' : 'Create'}
                 </button>

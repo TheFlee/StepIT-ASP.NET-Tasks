@@ -84,7 +84,7 @@ public class GlobalExceptionMiddleware
             .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
         var problem = new ProblemDetails
         {
-            Type = "https://tools.ietf.org/html/rfc7807#section-3.1",
+            Type = "https://tools.ietf.org/html/rfc78_07#section-3.1",
             Title = "One or more validation errors occurred",
             Status = statusCode,
             Detail = "See the 'errors' property for more details",

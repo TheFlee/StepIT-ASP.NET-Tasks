@@ -397,7 +397,7 @@ export default function ProjectBoardPage() {
                 setEditPriority('Medium');
                 setError('');
               }}
-              className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#0747a6] cursor-pointer"
+              className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#_0747a6] cursor-pointer"
             >
               Create task
             </button>
@@ -496,7 +496,7 @@ export default function ProjectBoardPage() {
                 <button type="button" onClick={closeModal} className="py-2 px-4 rounded font-medium border border-[#ebecf0] bg-white text-[#172b4d] hover:bg-[#ebecf0] cursor-pointer">
                   Cancel
                 </button>
-                <button type="button" onClick={saveTask} disabled={saving} className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#0747a6] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer">
+                <button type="button" onClick={saveTask} disabled={saving} className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#_0747a6] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer">
                   {saving ? 'Saving…' : 'Save'}
                 </button>
               </div>
@@ -527,7 +527,7 @@ export default function ProjectBoardPage() {
                     type="button"
                     onClick={handleAddSelected}
                     disabled={!selectedUserId}
-                    className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#0747a6] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#_0747a6] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     Add
                   </button>
@@ -544,7 +544,7 @@ export default function ProjectBoardPage() {
                     onChange={(e) => setMemberEmail(e.target.value)}
                     placeholder="Email"
                   />
-                  <button type="submit" className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#0747a6] cursor-pointer">
+                  <button type="submit" className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#_0747a6] cursor-pointer">
                     Add
                   </button>
                 </form>
@@ -615,7 +615,7 @@ export default function ProjectBoardPage() {
                 <button type="button" onClick={() => setShowCreate(false)} className="py-2 px-4 rounded font-medium border border-[#ebecf0] bg-white text-[#172b4d] hover:bg-[#ebecf0] cursor-pointer">
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#0747a6] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer">
+                <button type="submit" disabled={saving} className="py-2 px-4 rounded font-medium bg-[#0052cc] text-white hover:bg-[#_0747a6] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer">
                   {saving ? 'Creating…' : 'Create'}
                 </button>
               </div>

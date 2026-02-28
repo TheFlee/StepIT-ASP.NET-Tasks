@@ -19,4 +19,10 @@
   <Folder Name="/06. Web API/">
     <Project Path="06. Web API/06. Web API.csproj" Id="53801ae8-975d-47fb-a48f-630cd68b9705" />
   </Folder>
+  <Folder Name="/07. TaskFlow CQRS/">
+    <Project Path="07. TaskFlow CQRS.Api/07. TaskFlow CQRS.Api.csproj" Id="7660a572-74a3-497b-a264-d6e85664e5bd" />
+    <Project Path="07. TaskFlow CQRS.Application/07. TaskFlow CQRS.Application.csproj" Id="bbe9cbfc-cdf7-4634-8212-26a42a619107" />
+    <Project Path="07. TaskFlow CQRS.Domain/07. TaskFlow CQRS.Domain.csproj" Id="d5cdf61f-be91-4acd-8a8e-5aad40335735" />
+    <Project Path="07. TaskFlow CQRS.Infrastructure/07. TaskFlow CQRS.Infrastructure.csproj" Id="a6a1ad9b-5e98-49f5-99cf-f4906b58d1a6" />
+  </Folder>
 </Solution>

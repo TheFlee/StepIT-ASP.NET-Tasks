@@ -93,7 +93,7 @@ export default function RegisterPage() {
           {error && <p className="text-xs text-red-600">{error}</p>}
           <button
             type="submit"
-            className="w-full mt-2 py-2.5 px-4 font-medium rounded bg-[#0052cc] text-white hover:bg-[#0747a6] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full mt-2 py-2.5 px-4 font-medium rounded bg-[#0052cc] text-white hover:bg-[#_0747a6] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={loading}
           >
             {loading ? 'Signing up…' : 'Sign up'}

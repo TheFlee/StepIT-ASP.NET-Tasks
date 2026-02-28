@@ -129,7 +129,7 @@ export default function UserManagementPage() {
                         type="button"
                         onClick={() => handleAssign(u.id)}
                         disabled={assigning === u.id || !newRole[u.id]?.trim()}
-                        className="py-1.5 px-3 rounded font-medium bg-[#0052cc] text-white hover:bg-[#0747a6] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
+                        className="py-1.5 px-3 rounded font-medium bg-[#0052cc] text-white hover:bg-[#_0747a6] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
                       >
                         {assigning === u.id ? '…' : 'Assign'}
                       </button>
